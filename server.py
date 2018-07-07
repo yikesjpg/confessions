@@ -12,12 +12,14 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import atexit
 import datetime
+from dotenv import load_dotenv, find_dotenv
 import facebook
 from flask import Flask, jsonify, request
-import json
 import os
 from pytz import timezone
 import redis
+
+load_dotenv(find_dotenv())
 
 app = Flask(__name__)
 db  = redis.StrictRedis.from_url(os.environ["REDIS_URL"], decode_responses=True)
