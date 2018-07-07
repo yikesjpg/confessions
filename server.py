@@ -66,6 +66,10 @@ def state():
     }
     return jsonify(st)
 
+@app.route('/')
+def index():
+    return "ping! pong!"
+
 scheduler = BackgroundScheduler(timezone=timezone("America/Los_Angeles"))
 scheduler.start()
 scheduler.add_job(
