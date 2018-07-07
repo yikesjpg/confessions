@@ -61,7 +61,7 @@ scheduler = BackgroundScheduler(timezone=timezone("America/Los_Angeles"))
 scheduler.start()
 scheduler.add_job(
     func=popq,
-    trigger=CronTrigger(hour='9-23', minute="0,30"),
+    trigger=CronTrigger(hour='0-2,9-23', minute="0,30"),
     id='posting_job',
     name='Post every hour.',
     replace_existing=True)
