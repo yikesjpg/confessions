@@ -10,7 +10,7 @@ import click
 from dotenv import load_dotenv, find_dotenv
 import gspread
 import json
-from oauth2client import file, client, tools
+from oauth2client.service_account import ServiceAccountCredentials
 import os
 import pickle
 import pprint
@@ -22,16 +22,11 @@ def j(s):
     return os.path.join(os.path.dirname(__file__), s)
 
 def read_credentials():
-    client_secret = j("client_secret.json")
-    scope = 'https://spreadsheets.google.com/feeds'
-    store = file.Storage(j('credentials.json'))
-
-    creds = store.get()
-    if not creds or creds.invalid:
-        flow = client.flow_from_clientsecrets(client_secret, scope)
-        creds = tools.run_flow(flow, store)
-
-    return creds
+    creds_filename = j("credentials.json")
+    scope = [
+        'https://spreadsheets.google.com/feeds',
+    ]
+    return ServiceAccountCredentials.from_json_keyfile_name(creds_filename, scope)
 
 @click.group()
 def cli():
@@ -58,7 +53,7 @@ def review():
     """Reviews submissions.
 
     Required environment vars: SHEET_URL, SERVER
-    Magic files: client_secret.json, todo_post.p, credentials.json
+    Magic files: credentials.json, todo_post.p
     """
     sheet_url = os.getenv("SHEET_URL")
     server = os.getenv("SERVER")
@@ -67,15 +62,14 @@ def review():
         click.echo("inf | attempting to get google api credentials...")
         gc = gspread.authorize(read_credentials())
     except:
-        click.echo("err | couldn't read google api credentials. check .env")
-        click.echo("    | and try again.")
+        click.echo("err | couldn't read google api credentials.")
         return
     
     try:
         sh = gc.open_by_url(sheet_url)
     except:
         click.echo("err | this sheet doesn't exist. maybe you need to share")
-        click.echo("    | it with the client_email in $APP_JSON first?")
+        click.echo("    | it with the client_email first?")
         return
     
     click.echo("inf | loading worksheet data.")
