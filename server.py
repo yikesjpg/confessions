@@ -40,12 +40,14 @@ def posts():
     else:
         return jsonify(db.lrange("postq", 0, -1))
 
-@app.route('/state')
+@app.route('/state', methods=["GET", "POST"])
 def state():
     if request.method == "POST":
         json = request.get_json()
         for k in json:
-            db.set(k, json[k])
+            if k == "postq":
+                db.delete("postq")
+                db.rpush(k, *json[k])
 
     st = {
         "postq": [] if not db.exists("postq") else db.lrange("postq", 0, -1)
