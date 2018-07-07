@@ -19,7 +19,7 @@ from pytz import timezone
 import redis
 
 app = Flask(__name__)
-db  = redis.Redis.from_url(os.environ["REDIS_URL"])
+db  = redis.StrictRedis.from_url(os.environ["REDIS_URL"])
 
 if not db.exists("postq"):
     db.set("postq", [])
@@ -32,7 +32,7 @@ def post(s):
         message=s)
 
 def popq():
-    if db.get("postq"):
+    if db.lrange("postq", 0, -1):
         post(db.lpop("postq"))
 
 @app.route('/posts', methods=["GET", "POST"])
@@ -41,7 +41,7 @@ def posts():
         db.rpush("postq", *request.get_json())
         return "it g ma"
     else:
-        return jsonify(db.get("postq"))
+        return jsonify(db.lrange("postq", 0, -1))
 
 @app.route('/state', methods=["GET", "POST"])
 def state():
@@ -53,7 +53,7 @@ def state():
             db.set(k, json[k])
 
     st = {
-        "postq": db.get("postq")
+        "postq": db.lrange("postq", 0, -1)
     }
     return jsonify(st)
 
