@@ -19,7 +19,7 @@ from pytz import timezone
 import redis
 
 app = Flask(__name__)
-db  = redis.Redis(os.environ["REDIS_URL"])
+db  = redis.Redis.from_url(os.environ["REDIS_URL"])
 
 if not db.exists("postq"):
     db.set("postq", [])
