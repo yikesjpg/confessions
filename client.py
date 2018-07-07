@@ -51,8 +51,9 @@ def state(filename):
             with open(filename) as f:
                 data = json.load(open(filename))
                 r = requests.post(server + "/state", json=data)
-    except OSError:
+    except OSError as e:
         click.echo("err | invalid file.")
+        raise e
     else:
         pp = pprint.PrettyPrinter()
         pp.pprint(r.json())
@@ -73,16 +74,16 @@ def review():
     try:
         click.echo("inf | attempting to get google api credentials...")
         gc = gspread.authorize(read_credentials())
-    except:
+    except Exception as e:
         click.echo("err | couldn't read google api credentials.")
-        return
+        raise e
     
     try:
         sh = gc.open_by_url(sheet_url)
-    except:
+    except Exception as e:
         click.echo("err | this sheet doesn't exist. maybe you need to share")
         click.echo("    | it with the client_email first?")
-        return
+        raise e
     
     click.echo("inf | loading worksheet data.")
     click.echo("    | this may take a while...")
@@ -141,16 +142,20 @@ def review():
             # and the things we gotta post now
             try:
                 strs = pickle.load(open("todo_post.p", "rb")) + strs
+                click.echo("inf | loading previous unsubmitted posts...")
             except:
                 pass
 
             # We try to post what we have; otherwise, we pickle it all
             try:
+                click.echo("inf | uploading approved posts to server...")
                 requests.post(server + "/posts", json=strs)
+                click.echo("inf | done.")
             except Exception as e:
                 pickle.dump(strs, open("todo_post.p", "wb"))
                 click.echo("err | could not send approvals to posting server.")
                 click.echo("    | approved posts have been saved to disk at `todo_post.p`.")
+                raise e
             else:
                 if os.path.isfile("todo_post.p"):
                     os.remove("todo_post.p")
