@@ -15,11 +15,13 @@ import os
 import pickle
 import pprint
 import requests
+import sys
 
 load_dotenv(find_dotenv())
 
-def j(s):
-    return os.path.join(os.path.dirname(__file__), s)
+def j(relative_path):
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
 
 def read_credentials():
     creds_filename = j("credentials.json")
@@ -33,17 +35,27 @@ def cli():
     pass
 
 #########
-# QUERY #
+# STATE #
 #########
 @cli.command()
-def query():
-    """Queries the server for posts
+@click.argument('filename', required=False)
+def state(filename):
+    """Updates the server's state based on a json file or retrieves it.
     """
     server = os.getenv("SERVER")
-    r = requests.get(server + "/posts")
-
-    pp = pprint.PrettyPrinter(width=60, indent=4)
-    pp.pprint(r.json())
+    r = None
+    try:
+        if filename is None:
+            r = requests.get(server + "/state")
+        else:
+            with open(filename) as f:
+                data = json.load(open(filename))
+                r = requests.post(server + "/state", json=data)
+    except OSError:
+        click.echo("err | invalid file.")
+    else:
+        pp = pprint.PrettyPrinter()
+        pp.pprint(r.json())
 
 ##########
 # REVIEW #

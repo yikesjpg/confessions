@@ -8,38 +8,65 @@ accordingly.
 Only one instance of a server should be run across all admins.
 """
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+import atexit
+import facebook
 from flask import Flask, jsonify, request
 import os
-import pickle
+from pytz import timezone
 
 app = Flask(__name__)
-postq = []
 
-def state():
-    global postq
+st = {
+    "postq": []
+}
 
-    return {
-        "posts": postq
-    }
+def post(s):
+    access_token = os.environ["ACCESS_TOKEN"]
+    group_id = os.environ["GROUP_ID"]
+    graph = facebook.GraphAPI(access_token=access_token, version="3.0")
+    graph.put_object(parent_object=group_id, connection_name='feed',
+        message=s)
+
+def popq():
+    global st
+
+    if st["postq"]:
+        post(st["postq"].pop(0))
 
 @app.route('/posts', methods=["GET", "POST"])
 def posts():
-    global postq
+    global st
 
     if request.method == "POST":
-        postq += request.get_json()
+        st["postq"] += request.get_json()
         return "it g ma"
     else:
-        return jsonify(state())
+        return jsonify(postq)
+
+@app.route('/state', methods=["GET", "POST"])
+def state():
+    global st
+
+    if request.method == "POST":
+        json = request.get_json()
+        for k in json:
+            state[k] = v
+        return jsonify(st)
+    else:
+        return jsonify(st)
+
+scheduler = BackgroundScheduler(timezone=timezone("America/Los_Angeles"))
+scheduler.start()
+scheduler.add_job(
+    func=popq,
+    trigger=CronTrigger(hour='9-23', minute="0,30"),
+    id='posting_job',
+    name='Post every hour.',
+    replace_existing=True)
+
+atexit.register(lambda: scheduler.shutdown())
 
 if __name__ == '__main__':
-    try:
-        try:
-            postq = pickle.load(open("postq.p", "rb"))
-        except:
-            pass
-
-        app.run()
-    except:
-        if postq:
-            pickle.dump(postq, open("postq.p", "wb"))
+    app.run(host="0.0.0.0")
