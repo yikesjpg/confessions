@@ -11,6 +11,7 @@ Only one instance of a server should be run across all admins.
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import atexit
+import datetime
 import facebook
 from flask import Flask, jsonify, request
 import json
@@ -30,6 +31,15 @@ def post(s):
 
 def popq():
     if db.exists("postq"):
+        time = datetime.datetime.utcnow()
+        if db.exists("last_modified"):
+            prev = datetime.datetime.strptime(db.get("last_modified"), "%Y-%m-%d %H:%M:%S")
+            diff = time - prev
+            if diff <= datetime.timedelta(minutes=1):
+                return
+
+        t = time.strftime("%Y-%m-%d %H:%M:%S")
+        db.set("last_modified", t)
         post(db.lpop("postq"))
 
 @app.route('/posts', methods=["GET", "POST"])
