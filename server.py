@@ -62,5 +62,3 @@ scheduler.add_job(
     replace_existing=True)
 
 atexit.register(lambda: scheduler.shutdown())
-
-app.run()
