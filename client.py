@@ -16,6 +16,7 @@ import pickle
 import pprint
 import requests
 import sys
+import traceback
 
 load_dotenv(find_dotenv())
 
@@ -75,15 +76,19 @@ def review():
         click.echo("inf | attempting to get google api credentials...")
         gc = gspread.authorize(read_credentials())
     except Exception as e:
+        traceback.print_exc()
         click.echo("err | couldn't read google api credentials.")
-        raise e
+        click.echo("err | debug information has been printed.")
+        return
     
     try:
         sh = gc.open_by_url(sheet_url)
     except Exception as e:
+        traceback.print_exc()
         click.echo("err | this sheet doesn't exist. maybe you need to share")
         click.echo("    | it with the client_email first?")
-        raise e
+        click.echo("err | debug information has been printed.")
+        return
     
     click.echo("inf | loading worksheet data.")
     click.echo("    | this may take a while...")
@@ -151,19 +156,18 @@ def review():
                 click.echo("inf | uploading approved posts to server...")
                 requests.post(server + "/posts", json=strs)
                 click.echo("inf | done.")
-            except Exception as e:
+            except:
                 pickle.dump(strs, open("todo_post.p", "wb"))
                 click.echo("err | could not send approvals to posting server.")
                 click.echo("    | approved posts have been saved to disk at `todo_post.p`.")
-                raise e
             else:
                 if os.path.isfile("todo_post.p"):
                     os.remove("todo_post.p")
 
         except Exception as e:
-            click.echo("err | something went horribly wrong with modifying the sheet.")
-            click.echo("    | please send over this debug information:")
-            raise e
+            traceback.print_exc()
+            click.echo("err | something went wrong...")
+            click.echo("    | debug information has been printed.")
         finally:
             state_ws.update_acell("B1", "FALSE")
     else:
