@@ -167,10 +167,10 @@ def review():
                 # set the new cstep and crow.
                 state_ws.update_acell(
                     "B2",
-                    str(cstep + 0 if good == 0 else strs[good - 1][0] + 1))
+                    str(cstep if good == 0 else cstep + strs[good - 1][0] + 1))
                 state_ws.update_acell(
                     "B3",
-                    str(crow + 0 if good == 0 else strs[good - 1][1] + 1))
+                    str(crow if good == 0 else crow + strs[good - 1][1] + 1))
                 state_ws.update_acell("B4", str(new_sched))
             else:
                 click.echo("inf | done.")
