@@ -64,8 +64,8 @@ def schedule(access_token, group_id, last_sched, posts):
                     published="false",
                     scheduled_publish_time=str(sched))
                 good += 1
-        except:
-            pass
+        except Exception as e:
+            raise e
 
     return (good, sched)
 
@@ -126,6 +126,11 @@ def review():
             click.echo("inf | beginning the review process.")
             click.echo("    | you can quit at any time by pressing Ctrl+C")
             click.echo("    | (if this does nothing, hit Enter afterwards).")
+            click.echo("inf | the next item in the review queue will be")
+            click.echo("    | displayed for your convenience. please type out")
+            click.echo("    | the full post that you would like to schedule.")
+            click.echo("inf | if you'd like to reject this post and move to the")
+            click.echo("    | next queue item, type the n character.")
 
             # List comprehension to ignore timestamps
             items = [x[1] for x in confessions.get_all_values()[1 + crow:]]
@@ -141,9 +146,10 @@ def review():
 
                     click.echo()
                     click.echo("rev : {}) {}".format(cstep + cstep_inc, text))
-                    if click.confirm("rev > Approve?"):
-                        strs.append((cstep_inc, rc, "{})\n{}".format(
-                            cstep + cstep_inc, text)))
+                    r = click.prompt("rev > Text")
+                    if r != "N":
+                        strs.append((cstep_inc, rc, "{}".format(
+                            r)))
                         cstep_inc += 1
                     rc += 1
             except click.Abort:
@@ -167,10 +173,10 @@ def review():
                 # set the new cstep and crow.
                 state_ws.update_acell(
                     "B2",
-                    str(cstep + 0 if good == 0 else strs[good - 1][0] + 1))
+                    str(cstep if good == 0 else cstep + strs[good - 1][0] + 1))
                 state_ws.update_acell(
                     "B3",
-                    str(crow + 0 if good == 0 else strs[good - 1][1] + 1))
+                    str(crow if good == 0 else crow + strs[good - 1][1] + 1))
                 state_ws.update_acell("B4", str(new_sched))
             else:
                 click.echo("inf | done.")
