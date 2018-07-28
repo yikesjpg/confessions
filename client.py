@@ -20,7 +20,7 @@ load_dotenv(find_dotenv())
 class St(object):
     def __init__(self, state_ws):
         self._ws = state_ws
-        self._cells = state_ws.range("B1:B7")
+        self._cells = state_ws.range("B1:B8")
         state = [x.value for x in self._cells]
 
         self.locked = state[0]
@@ -30,6 +30,7 @@ class St(object):
         self.access_token = state[4]
         self.refresh_token = state[5]
         self.group_id = state[6]
+        self.defer_row = int(state[7])
 
     def lock(self):
         self._ws.update_acell("B1", "TRUE")
@@ -252,20 +253,19 @@ def review():
                     click.echo("rev | next confession:")
                     click.echo("{})\n{}".format(cstep + cstep_inc, text))
                     prompt = click.prompt("rev > Deliberation")
-                    prompt = prompt.lower()
-                    if prompt == "y":
+                    if prompt.lower() == "y":
                         strs.append((cstep_inc, rc, "{})\n{}".format(
                             cstep + cstep_inc, text)))
                         prev_vals[cstep + cstep_inc] = crow + rc
                         cstep_inc += 1
-                    elif prompt == "p":
+                    elif prompt.lower() == "p":
                         strs.append((cstep_inc, rc, "{})\n{}".format(
                             cstep + cstep_inc, orig)))
                         prev_vals[cstep + cstep_inc] = crow + rc
                         cstep_inc += 1
-                    elif prompt == "n":
+                    elif prompt.lower() == "n":
                         pass
-                    elif prompt == "q":
+                    elif prompt.lower() == "q":
                         raise click.Abort()
                     else:
                         strs.append((cstep_inc, rc, "{})\n{}\n{}".format(
