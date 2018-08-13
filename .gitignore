@@ -7,3 +7,4 @@ src/*
 *.manifest
 *.spec
 *.exe
+*.zip

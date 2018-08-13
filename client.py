@@ -14,13 +14,10 @@ import requests
 import sys
 import traceback
 
-load_dotenv(find_dotenv())
-
-
 class St(object):
     def __init__(self, state_ws):
         self._ws = state_ws
-        self._cells = state_ws.range("B1:B8")
+        self._cells = state_ws.range("B1:B9")
         state = [x.value for x in self._cells]
 
         self.locked = state[0]
@@ -31,6 +28,7 @@ class St(object):
         self.refresh_token = state[5]
         self.group_id = state[6]
         self.defer_row = int(state[7])
+        self.interval = int(state[8])
 
     def lock(self):
         self._ws.update_acell("B1", "TRUE")
@@ -70,7 +68,7 @@ def in_time(start, end, now):
         return now >= start or now <= end
 
 
-def schedule(access_token, refresh_token, group_id, last_sched, posts):
+def schedule(interval, access_token, refresh_token, group_id, last_sched, posts):
     """
     Env vars: CLIENT_ID, CLIENT_SECRET
     """
@@ -90,7 +88,7 @@ def schedule(access_token, refresh_token, group_id, last_sched, posts):
             sched = max(now, last_sched)
 
             for item in posts:
-                sched += 30 * 60
+                sched += interval * 60
 
                 tt = tz.localize(datetime.fromtimestamp(sched))
 
@@ -109,6 +107,7 @@ def schedule(access_token, refresh_token, group_id, last_sched, posts):
                 }
 
                 resp = requests.post(endpoint, json=data, headers=headers)
+                print(resp.json())
                 if "error" in resp.json():
                     if resp.json()["error"] == "request_forbidden":
                         again = True
@@ -138,7 +137,7 @@ def schedule(access_token, refresh_token, group_id, last_sched, posts):
             resp.raise_for_status()
             resp = resp.json()
 
-            return schedule(resp["access_token"], resp["refresh_token"],
+            return schedule(interval, resp["access_token"], resp["refresh_token"],
                             group_id, last_sched, posts[good:])
         except:
             print("err | failed...")
@@ -286,8 +285,8 @@ def review():
             # We try to post what we have; otherwise, we give up
             click.echo("inf | scheduling {} approved posts... (this will take a long while)".format(cstep_inc))
             good, new_sched, access_token, refresh_token = schedule(
-                state.access_token, state.refresh_token, state.group_id,
-                last_sched, [x[2] for x in strs])
+                state.interval, state.access_token, state.refresh_token,
+                state.group_id, last_sched, [x[2] for x in strs])
             if good != cstep_inc:
                 click.echo(
                     "err | {} approved post(s) could not be scheduled.".format(
@@ -335,4 +334,5 @@ def review():
 
 
 if __name__ == '__main__':
+    load_dotenv(dotenv_path=j(".env"))
     review()
